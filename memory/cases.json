@@ -1,0 +1,57 @@
+[
+  {
+    "id": "known-merchant-small-payment",
+    "title": "Known merchant small payment",
+    "tags": ["transfer", "merchant", "low-risk"],
+    "operation": "transfer",
+    "recipientTrust": "verified",
+    "amountBand": "low",
+    "decision": "ALLOW",
+    "evidence": "Prior CupSafe fixture allowed a small USDt merchant payment when the recipient was verified and amount stayed under cap.",
+    "advice": "Proceed only if the merchant identity is recognized."
+  },
+  {
+    "id": "unknown-approval-pattern",
+    "title": "Unknown contract approval",
+    "tags": ["approve", "contract", "drain-risk"],
+    "operation": "approve",
+    "recipientTrust": "unknown",
+    "amountBand": "high",
+    "decision": "DENY",
+    "evidence": "Unknown approval requests are high-risk because token allowance can be used after the signature.",
+    "advice": "Reject the approval and verify the contract from official project links."
+  },
+  {
+    "id": "bridge-review-pattern",
+    "title": "Bridge requires manual review",
+    "tags": ["bridge", "finality", "routing"],
+    "operation": "bridge",
+    "recipientTrust": "known",
+    "amountBand": "medium",
+    "decision": "REVIEW",
+    "evidence": "Bridge operations add destination-chain, route, and finality risk even when the route is known.",
+    "advice": "Confirm destination chain, recipient address, bridge status, and amount before signing."
+  },
+  {
+    "id": "over-cap-spend",
+    "title": "Spend exceeds bankroll cap",
+    "tags": ["cap", "amount", "risk-control"],
+    "operation": "transfer",
+    "recipientTrust": "verified",
+    "amountBand": "high",
+    "decision": "DENY",
+    "evidence": "A verified recipient does not override the daily bankroll cap.",
+    "advice": "Lower the amount or require a separate manual approval."
+  },
+  {
+    "id": "high-slippage-swap",
+    "title": "High slippage swap",
+    "tags": ["swap", "slippage", "liquidity"],
+    "operation": "swap",
+    "recipientTrust": "known",
+    "amountBand": "medium",
+    "decision": "REVIEW",
+    "evidence": "High slippage can indicate thin liquidity, price impact, or a malicious route.",
+    "advice": "Reduce slippage, split the order, or use a deeper liquidity route."
+  }
+]

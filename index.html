@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CupSafe Memory Agent - Qwen Ready Demo</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #f6f7f9;
+        color: #15181f;
+      }
+      main {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 28px 18px;
+      }
+      header {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        align-items: flex-end;
+        border-bottom: 1px solid #d9dee7;
+        padding-bottom: 18px;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: clamp(30px, 4vw, 52px);
+        line-height: 1;
+      }
+      p { margin: 0; color: #5e6673; line-height: 1.6; }
+      .badge {
+        border: 1px solid #d9dee7;
+        border-radius: 6px;
+        background: #fff;
+        padding: 8px 12px;
+        font-weight: 800;
+        white-space: nowrap;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 330px minmax(0, 1fr);
+        gap: 16px;
+        margin-top: 20px;
+      }
+      .panel {
+        background: #fff;
+        border: 1px solid #d9dee7;
+        border-radius: 8px;
+        padding: 16px;
+      }
+      button {
+        width: 100%;
+        margin-top: 10px;
+        padding: 12px;
+        border: 1px solid #d9dee7;
+        border-radius: 6px;
+        background: #fff;
+        text-align: left;
+        cursor: pointer;
+        color: #15181f;
+      }
+      button:hover,
+      button[aria-pressed="true"] {
+        border-color: #276ef1;
+        box-shadow: 0 0 0 2px rgba(39, 110, 241, 0.14);
+      }
+      .title { display: block; font-weight: 900; }
+      .meta { display: block; color: #5e6673; font-size: 13px; margin-top: 4px; }
+      .decision {
+        display: inline-block;
+        min-width: 88px;
+        text-align: center;
+        color: #fff;
+        border-radius: 6px;
+        font-weight: 900;
+        padding: 10px 14px;
+        margin-bottom: 12px;
+      }
+      .ALLOW { background: #137a4b; }
+      .REVIEW { background: #a45a00; }
+      .DENY { background: #b51f2d; }
+      pre {
+        white-space: pre-wrap;
+        background: #11151d;
+        color: #edf2ff;
+        border-radius: 8px;
+        padding: 14px;
+        overflow: auto;
+      }
+      @media (max-width: 780px) {
+        header, .grid { grid-template-columns: 1fr; display: grid; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <h1>CupSafe Memory Agent</h1>
+          <p>Qwen Cloud 方向的离线 demo。当前只检索本地风险记忆，不调用 API、不使用云账号、不连接钱包。</p>
+        </div>
+        <div class="badge">Qwen-ready memory agent</div>
+      </header>
+
+      <section class="grid">
+        <aside class="panel">
+          <h2>模拟提问</h2>
+          <p>选择一个交易问题，查看 agent 如何检索历史风险记忆并给出答案。</p>
+          <div id="questions"></div>
+        </aside>
+        <section class="panel">
+          <div id="decision" class="decision REVIEW">REVIEW</div>
+          <p id="summary"></p>
+          <h2>Agent Answer</h2>
+          <pre id="answer"></pre>
+        </section>
+      </section>
+    </main>
+
+    <script type="module">
+      import { answerRiskQuestion, loadMemoryCases } from "./src/memory-agent.js";
+
+      const examples = [
+        { label: "Pay 8 USDT to verified fan shop", operation: "transfer", amount: 8, dailyCap: 25, recipientTrust: "verified", slippageBps: 0 },
+        { label: "Approve 50 USDT for unknown contract", operation: "approve", amount: 50, dailyCap: 25, recipientTrust: "unknown", slippageBps: 0 },
+        { label: "Bridge 12 USDT before a live match", operation: "bridge", amount: 12, dailyCap: 25, recipientTrust: "known", slippageBps: 80 },
+        { label: "Swap 9 USDT with 6.5% slippage", operation: "swap", amount: 9, dailyCap: 25, recipientTrust: "known", slippageBps: 650 },
+      ];
+
+      const state = { cases: [], active: 0 };
+      const nodes = {
+        questions: document.querySelector("#questions"),
+        decision: document.querySelector("#decision"),
+        summary: document.querySelector("#summary"),
+        answer: document.querySelector("#answer"),
+      };
+
+      function renderQuestions() {
+        nodes.questions.innerHTML = "";
+        examples.forEach((example, index) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.setAttribute("aria-pressed", String(index === state.active));
+          button.innerHTML = `<span class="title">${example.label}</span><span class="meta">${example.operation} / ${example.recipientTrust} / ${example.amount} USDT</span>`;
+          button.addEventListener("click", () => select(index));
+          nodes.questions.appendChild(button);
+        });
+      }
+
+      function select(index) {
+        state.active = index;
+        renderQuestions();
+        const result = answerRiskQuestion(examples[index], state.cases);
+        nodes.decision.textContent = result.decision;
+        nodes.decision.className = `decision ${result.decision}`;
+        nodes.summary.textContent = result.summary;
+        nodes.answer.textContent = result.answer;
+      }
+
+      state.cases = await loadMemoryCases();
+      select(0);
+    </script>
+  </body>
+</html>
