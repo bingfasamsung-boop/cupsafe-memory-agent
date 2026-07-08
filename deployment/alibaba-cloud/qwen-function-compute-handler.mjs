@@ -15,12 +15,29 @@ function buildResponse(statusCode, body) {
 }
 
 export async function handler(event) {
-  const apiKey = process.env.DASHSCOPE_API_KEY;
-  if (!apiKey) {
-    return buildResponse(500, { error: "DASHSCOPE_API_KEY is not configured" });
+  const payload = parsePayload(event);
+  const path = payload.path || payload.rawPath || payload.requestContext?.http?.path || "/health";
+
+  if (path === "/" || path === "/health") {
+    return buildResponse(200, {
+      service: "CupSafe Memory Agent",
+      runtime: "Alibaba Cloud Function Compute",
+      qwenProvider: "Alibaba Cloud DashScope / Qwen",
+      safety: "No private keys, no wallet signatures, no transaction execution",
+      status: "ok"
+    });
   }
 
-  const payload = typeof event === "string" ? JSON.parse(event || "{}") : event || {};
+  const apiKey = process.env.DASHSCOPE_API_KEY;
+  if (!apiKey) {
+    return buildResponse(200, {
+      service: "CupSafe Memory Agent",
+      mode: "proof-of-deployment",
+      qwenProvider: "Alibaba Cloud DashScope / Qwen",
+      status: "DASHSCOPE_API_KEY not configured; live Qwen reasoning is disabled for this proof endpoint"
+    });
+  }
+
   const transaction = payload.transaction || {};
   const memory = payload.memory || [];
 
@@ -58,4 +75,11 @@ export async function handler(event) {
     decision: result.choices?.[0]?.message?.content || "",
     provider: "Alibaba Cloud DashScope / Qwen"
   });
+}
+
+function parsePayload(event) {
+  if (!event) return {};
+  if (typeof event === "string") return JSON.parse(event || "{}");
+  if (event instanceof Uint8Array) return JSON.parse(Buffer.from(event).toString("utf8") || "{}");
+  return event;
 }
